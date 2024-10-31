@@ -1,16 +1,17 @@
+#%%
 import numpy as np
 
 class HansenAlgorithm:
-    def __init__(self, wind_speed_V0, R, angular_speed, B, air_density):
+    tolerance  = 1e-6 # Σταθερά για τον έλεγχο σύγκλισης των τιμών των συντελεστών a και a'
+    max_iter = 100 # Μέγιστος αριθμός επαναλήψεων
+    
+    def __init__(self, wind_speed_V0, R, angular_speed, B, air_density=1.225):
         self.wind_speed_V0 = wind_speed_V0 # ταχύτητα του ανέμου (σε m/sec)
         self.R = R
         self.angular_speed = angular_speed # γωνιακή ταχύτητα (σε rad/sec)
         self.B = B # αριθμός πτερυγίων 
         self.air_density = air_density # πυκνότητα του αέρα (σε kg/m^3)
         
-    def initialize_induction_factors(self, a, a_accent): # αρχικοποίηση των συντελεστών a και a' στο 0 (ΒΗΜΑ 1 ΤΟΥ ΑΛΓΟΡΙΘΜΟΥ)
-        self.a = 0.0
-        self.a_accent = 0.0
         
     def calculation_of_flow_angle(self, a, a_accent, r): # μέθοδος για τον υπολογισμό της γωνίας ροής φ (ΒΗΜΑ 2 ΤΟΥ ΑΛΓΟΡΙΘΜΟΥ)
         # a_accent = a'
@@ -42,9 +43,7 @@ class HansenAlgorithm:
         a_accent_new = 1 / ((4 * np.sin(phi)*np.cos(phi)) / (sigma * Ct) - 1)
         return a_new, a_accent_new
     
-    def check_the_convergence(self, a, a_new, a_accent, a_accent_new, tolerance=1): # έλεγχος σύγκλισης των τιμών των συντελεστών a και a΄ (ΒΗΜΑ 7 ΤΟΥ ΑΛΓΟΡΙΘΜΟΥ)
-        return abs(a - a_new) < tolerance and abs(a_accent - a_accent_new) < tolerance
-    
+
     def calculation_of_local_forces(self, Vrel, Cl, Cd, chord): # υπολογισμός των τοπικών δυνάμεων στα τμήματα του πτερυγίου (ΒΗΜΑ 8 ΤΟΥ ΑΛΓΟΡΙΘΜΟΥ)
         L = 0.5 * self.air_density * (Vrel)**2 * Cl * chord
         D = 0.5 * self.air_density * (Vrel)**2 * Cd * chord
@@ -56,18 +55,26 @@ class HansenAlgorithm:
          return np.sqrt((v_axial)**2 + (v_tangential)**2)
      
     def simulation_of_algorithm(self, r, chord, theta_p, beta): # εκτέλεση του αλγόριθμου
-        a, a_accent = self._initialize_induction_factors()
-        while True:
+        a, a_accent = 0, 0 # αρχικοποίηση των συντελεστών a και a'
+        exit_flag = False
+        counter = 0 
+        
+        while not exit_flag:
             phi = self.calculation_of_flow_angle(a, a_accent, r)
             alpha = self.calculation_of_local_angle_of_attack(phi, theta_p, beta)
             Cl, Cd = self.cl_and_cd(alpha)
             Cn, Ct = self.calculation_of_Cn_and_Ct(Cl, Cd, phi)
             a_new, a_accent_new = self.updated_induction_factors(Cn, Ct, chord, r, phi)
             
-            if self.check_the_convergence(a, a_new, a_accent, a_accent_new):
-                break
+            if abs(a-a_new)<self.tolerance and  abs(a_accent - a_accent_new)< self.tolerance:
+                # exw sugklish
+                exit_flag = True
             else:
+                # sunexizw to algorithmo
                 a, a_accent = a_new, a_accent_new  
+            counter +=1
+            if counter > self.max_iter:
+                raise Exception("Δεν έχω σύγκλιση")
         Vrel = self.calculation_of_relative_spped(a, a_accent, r)
         L, D = self.calculation_of_local_forces(Vrel, Cl, Cd, r, phi, chord)
         
@@ -84,4 +91,12 @@ class HansenAlgorithm:
             "Lift" : L,
             "Drag" : D  
         }
+        
+        
+ha = HansenAlgorithm(wind_speed_V0=10, R=50, angular_speed=1, B=3)
+
+ha.simulation_of_algorithm(r=1, chord=1 , theta_p=1, beta=1 )
+#%%
+if __name__ == "__main__" :
+    ha = HansenAlgorithm(wind_speed_V0=10, R=50, angular_speed=1, B=3)
     
