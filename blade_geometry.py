@@ -1,7 +1,8 @@
+#%%
 import numpy as np
 import json
 import pandas as pd
-import py_windblade_opa.airfoils.af_naca4415_test as afs
+# import py_windblade_opa.airfoils.af_naca4415_test as afs
 import logging
 
 class BladeGeometry:
@@ -42,7 +43,10 @@ class BladeGeometry:
         self.lambda0 = lambda0
         # remove the following 
         # TODO this is temporary until the airfoils are properly implemented
-        self.airfoils_lst = airfoil if airfoil is not None else [afs.NACAtest(0.15) for i in range(self._no_sections)]
+        try:    
+            self.airfoils_lst = airfoil if airfoil is not None else [afs.NACAtest(0.15) for i in range(self._no_sections)]
+        except Exception as e:
+            logging.error("Could not create airfoils: %s", e)
 
     @property  
     def no_sections(self):
@@ -120,3 +124,5 @@ class BladeGeometry:
 
 
 
+bg = BladeGeometry.from_json("blade_geom1.json")
+print(bg.to_df())
