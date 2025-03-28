@@ -1,6 +1,6 @@
 #%%
 import numpy as np
-from naca4415 import Naca4415
+from naca4415_2 import Naca4415
 import pandas as pd
 import json
 import matplotlib.pyplot as plt
@@ -47,7 +47,7 @@ class HansenAlgorithm:
         a_p_new = 1 / ((4 * np.sin(phi)*np.cos(phi)) / (sigma * Ct) - 1)
         return a_new, a_p_new
 
-    def calculation_of_local_forces(self, r, a, a_p, chord, phi, Cl, Cd): # υπολογισμός των τοπικών δυνάμεων στα τμήματα του πτερυγίου (ΒΗΜΑ 8 ΤΟΥ ΑΛΓΟΡΙΘΜΟΥ)
+    def calculation_of_local_forces(self, r, a, a_p, chord, phi, Cl, Cd): # υπολογισμός των τοπικών φορτίων στα τμήματα του πτερυγίου (ΒΗΜΑ 8 ΤΟΥ ΑΛΓΟΡΙΘΜΟΥ)
         v_axial = self.wind_speed_V0 * (1 - a)
         v_tangential = self.rotation_speed * r * (1 + a_p)
         Vrel = np.sqrt((v_axial)**2 + (v_tangential)**2)
@@ -57,8 +57,8 @@ class HansenAlgorithm:
         pt = L * np.sin(phi) - D * np.cos(phi)
         return L, D, pn, pt
      
-    def segment_calc(self, r, theta_p, twist, chord, f=0.3): # εκτέλεση του αλγόριθμου
-        a, a_p = 0, 0  # αρχικοποίηση των συντελεστών a και a' σε 0
+    def segment_calcultion(self, r, theta_p, twist, chord, f=0.3): # εκτέλεση του αλγόριθμου
+        a, a_p = 0, 0  # αρχικοποίηση των συντελεστών επαγωγής a και a' σε 0
         exit_flag = False
         counter = 0 
         
@@ -123,7 +123,7 @@ class HansenAlgorithmWithBladeGeom(HansenAlgorithm): # Νέα κλάση για 
             theta_p = self.pitch[i]
             twist = 0 
             try:
-                results = self.segment_calc(r=r, theta_p=theta_p, twist=twist, chord=chord)
+                results = self.segment_calcultion(r=r, theta_p=theta_p, twist=twist, chord=chord)
                 # Ft = results["Lift"] * np.sin(results["phi"]) - results["Drag"] * np.cos(results["phi"]) # Η εφαπτομενική συνιστώσα είναι αυτή που παράγει την ροπή
                 # torque = Ft * r # η ροπή σε κάθε τμήμα του φτερού
                 # power = torque * self.rotation_speed
