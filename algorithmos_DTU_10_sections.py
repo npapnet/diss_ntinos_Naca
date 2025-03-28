@@ -190,21 +190,22 @@ if __name__ == "__main__":
     print(f"H συνολική ροπή της ανεμογεννήτριας είναι {total_torque:.2f} Nm")
     print(f"H συνολική ώση της ανεμογεννήτριας είναι {total_thrust:.2f} N")
     # df_DTU_results.to_csv("output_tab.csv", sep="\t", index=False)
-#%%%
+#%%
+if __name__== "__main__":
 
-hansen_DTU.rotation_speed =0.5
-pitch=hansen_DTU.pitch[0]
-chordn= hansen_DTU.chords[0]
-tc_ratio = hansen_DTU.tc_ratios[0]
-hansen_DTU.segment_calculation(2.8, 
-        chord=chordn,
-        pitch_angle_deg=pitch,
-        twist_deg= 0,
-        tc_ratio=tc_ratio,
-        f=0.3
-        )
+    hansen_DTU.rotation_speed =0.5
+    pitch=hansen_DTU.pitch[0]
+    chordn= hansen_DTU.chords[0]
+    tc_ratio = hansen_DTU.tc_ratios[0]
+    hansen_DTU.segment_calculation(2.8, 
+            chord=chordn,
+            pitch_angle_deg=pitch,
+            twist_deg= 0,
+            tc_ratio=tc_ratio,
+            f=0.3
+            )
 
-# %%
-hansen_DTU.pitch
+    # %%
+    hansen_DTU.pitch
 
 # %%
