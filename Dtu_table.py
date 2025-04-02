@@ -89,17 +89,17 @@ class DTU_calc:
         """ μέθοδος που θα μας επιστρέψει την τιμή του συντελεστή ροπής Cm """
         return self.get_interpolated_value(angle_of_attack, tc_ratio, 'Cm')
 
-# # Παράδειγμα χρήσης
-# naca4415 = DTU_calc('csv_data_file_DTU.csv')
-# a_o_a = 0.119217
-# tc = 24.1
+# Παράδειγμα χρήσης
+naca4415 = DTU_calc('csv_data_file_DTU.csv')
+a_o_a = 67.53
+tc = 100
 
-# cl_value = naca4415.cl(a_o_a, tc)
-# cd_value = naca4415.cd(a_o_a, tc)
-# cm_value = naca4415.cm(a_o_a, tc)
+cl_value = naca4415.cl(a_o_a, tc)
+cd_value = naca4415.cd(a_o_a, tc)
+cm_value = naca4415.cm(a_o_a, tc)
 
-# print(f"Για γωνία προσβολής {a_o_a}° και t/c ratio {tc} οι συντελεστές είναι:")
-# print(f"Cl: {cl_value}, Cd: {cd_value}, Cm: {cm_value}")
+print(f"Για γωνία προσβολής {a_o_a}° και t/c ratio {tc} οι συντελεστές είναι:")
+print(f"Cl: {cl_value}, Cd: {cd_value}, Cm: {cm_value}")
 
 
 

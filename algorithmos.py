@@ -25,35 +25,59 @@ class Hansen_Algorithm:
         else:
             self.airfoil_calc = None
         
-    def calculation_of_flow_angle_rad(self, a, a_p, r, v0, w_rps): # μέθοδος για τον υπολογισμό της γωνίας ροής φ (ΒΗΜΑ 2 ΤΟΥ ΑΛΓΟΡΙΘΜΟΥ)
-        # a_p = a'
-        
+    def calculation_of_flow_angle_rad(self, a, a_p, r:float, v0:int, w_rps:float):
+        """
+        μέθοδος για τον υπολογισμό της γωνίας ροής φ (ΒΗΜΑ 2 ΤΟΥ ΑΛΓΟΡΙΘΜΟΥ)
+
+        Args:
+            a (float): ο συντελεστής αξονικής επαγωγής α 
+            a_p (float): ο συντελεστής εφαπτομενικής επαγωγής α΄
+            r (float): η ακτίνα του κάθε τμήματος του πτερυγίου σε m
+            v0 (int): η ταχύτητα του ανέμου σε m/sec
+            w_rps (float): η ταχύτητα περιστροφής του ρότορα σε rad/sec
+
+        Raises:
+            ValueError: Εάν η τιμή του συντελεστή εφαπτομενικής επαγωγής α΄ έχει την τιμή -1
+             τότε η εφαπτομενική ταχύτητα που βρίσκεται στον παρονομαστή γίνεται μηδέν και δεν 
+             είναι δυνατόν να γίνει διαίρεση κλάσματος με παρονομαστή το μηδέν
+
+        Returns:
+            (float): η γωνία της ροής φ σε rad
+        """
         v_axial = v0 * (1 - a) # συνιστώσα αξονικής ταχύτητας
         v_tangential = w_rps* r * (1 + a_p) # συνιστώσα εφαπτομενικής ταχύτητας
-        
+
         if a_p == -1:
             raise ValueError("Διαίρεση με το 0")
         else:
             return np.arctan(v_axial / v_tangential)
     
-    def calculation_of_local_angle_of_attack_rad(self, flow_angle_rad:float, pitch_angle_deg:float, twist_deg:float): # μέθοδος για τον υπολογισμό
-        """ της τοπικής γωνίας προσβολής (ΒΗΜΑ 3 ΤΟΥ ΑΛΓΟΡΙΘΜΟΥ)
+    def calculation_of_local_angle_of_attack_rad(self, flow_angle_rad:float, pitch_angle_deg:float, twist_deg:float): 
+        """ 
+        μέθοδος για τον υπολογισμό της τοπικής γωνίας προσβολής (ΒΗΜΑ 3 ΤΟΥ ΑΛΓΟΡΙΘΜΟΥ)
 
         Args:
             flow_angle_rad (float): η γωνία της ροής φ σε rad
-            pitch_angle_deg (float): η γωνία βήματος του πτερυγίου
-            twist_deg (float):η γωνία συστροφής του πτερυγίου β
+            pitch_angle_deg (float): η γωνία βήματος του πτερυγίου σε μοίρες
+            twist_deg (float):η γωνία συστροφής του πτερυγίου β σε μοίρες
 
         Returns:
-             (float): angle of attack in rad
+             (float): η γωνία προσβολής σε rad
         """
         return (flow_angle_rad - (np.radians(pitch_angle_deg) + twist_deg))
     
-    def calculation_of_Cl_and_Cd(self, angle_of_attack_deg, tc_ratio=None): # πίνακας για τους συντελεστές άνωσης και οπισθέλκουσας Cl and Cd
-        # βάσει του angle_of_attack (γωνία προσβολής), αλλά και του λόγου t/c (thickness/chord ratio) (ΒΗΜΑ 4 ΤΟΥ ΑΛΓΟΡΙΘΜΟΥ)
-        # Cl = self.DTU_calc.cl(angle_of_attack, tc_ratio)
-        # Cd = self.DTU_calc.cd(angle_of_attack, tc_ratio)
-        # return Cl, Cd
+    def calculation_of_Cl_and_Cd(self, angle_of_attack_deg:float, tc_ratio=None):
+        """ 
+        πίνακας για τους συντελεστές άνωσης και οπισθέλκουσας Cl and Cd
+        βάσει του angle_of_attack (γωνία προσβολής), αλλά και του λόγου t/c (thickness/chord ratio) (ΒΗΜΑ 4 ΤΟΥ ΑΛΓΟΡΙΘΜΟΥ)
+        
+        Args:
+            angle_of_attack_deg (float): η γωνία προσβολής α σε μοίρες
+            tc_ratio (float): o λόγος πάχους αεροτομής / χορδή αεροτομής
+            
+        Returns:
+             (float): αεροδυναμικούς συντελεστές Cl και Cd
+        """
         if isinstance(self.airfoil_calc, Naca_calc):
             Cl = self.airfoil_calc.cl(angle_of_attack_deg) # Υπολογισμός Cl μόνο με βάση τη γωνία προσβολής
             Cd = self.airfoil_calc.cd(angle_of_attack_deg) # Υπολογισμός Cd μόνο με βάση τη γωνία προσβολής
@@ -64,23 +88,65 @@ class Hansen_Algorithm:
             raise ValueError("Άγνωστος τύπος αεροτομής")
         return Cl, Cd
     
-    def calculation_of_Cn_and_Ct(self, Cl, Cd, flow_angle_rad): # μέθοδος για τον υπολογισμό των συντελεστών 
-        # Cn(normal) και Ct(tangential) (ΒΗΜΑ 5 ΤΟΥ ΑΛΓΟΡΙΘΜΟΥ)
+    def calculation_of_Cn_and_Ct(self, Cl:float, Cd:float, flow_angle_rad:float):
+        """ 
+        μέθοδος για τον υπολογισμό των συντελεστών 
+        Cn(normal) και Ct(tangential) (ΒΗΜΑ 5 ΤΟΥ ΑΛΓΟΡΙΘΜΟΥ)
+
+        Args:
+            Cl (float): ο συντελεστής άνωσης Cl
+            Cd (float): o συντελεστής οπισθέλκουσας Cd
+            flow_angle_rad (float): η γωνία της ροής φ σε rad
+
+        Returns:
+             (float): συντελεστές Cn(normal) και Ct(tangential)
+        """
+        
         Cn = (Cl * np.cos(flow_angle_rad)) + (Cd * np.sin(flow_angle_rad))
         Ct = (Cl * np.sin(flow_angle_rad)) - (Cd * np.cos(flow_angle_rad))
         return Cn, Ct
     
-    def calculation_of_updated_induction_factors(self, Cn, Ct, r, chord, flow_angle_rad): # μέθοδος για τον υπολογισμό των νέων τιμών 
-        # των συντελεστών επαγωγής a και a΄ (ΒΗΜΑ 6 ΤΟΥ ΑΛΓΟΡΙΘΜΟΥ)
+    def calculation_of_updated_induction_factors(self, Cn, Ct, r, chord, flow_angle_rad):
+        """
+        μέθοδος για τον υπολογισμό των νέων τιμών 
+        των συντελεστών επαγωγής a και a΄ (ΒΗΜΑ 6 ΤΟΥ ΑΛΓΟΡΙΘΜΟΥ)
+
+        Args:
+            Cn (float): o συντελεστής Cn
+            Ct (float): o συντελεστής Ct
+            r (float): η ακτίνα του κάθε τμήματος του πτερυγίου σε m
+            chord (float): το μήκος χορδής του κάθε τμήματος του πτερυγίου σε m
+            flow_angle_rad (float): η γωνία της ροής φ σε rad
+
+        Returns:
+             (float): οι νέοι συντελεστές αξονικής και εφαπτομενικής επαγωγής α και α΄
+        """
+        
         solidity_factor = (self.B * chord) / (2 * np.pi * r) # solidity factor (συντελεστής στερεότητας)
         a_new = 1 / ((4 * np.sin(flow_angle_rad)**2) / (solidity_factor * Cn) + 1)
         a_p_new = 1 / ((4 * np.sin(flow_angle_rad)*np.cos(flow_angle_rad)) / (solidity_factor * Ct) - 1)
         return a_new, a_p_new
 
-    def calculation_of_local_loads(self, r, a, a_p, chord, flow_angle, Cl, Cd): # υπολογισμός των τοπικών φορτίων
-        # στα τμήματα του πτερυγίου (ΒΗΜΑ 8 ΤΟΥ ΑΛΓΟΡΙΘΜΟΥ)
-        v_axial = self.wind_speed_V0 * (1 - a)
-        v_tangential = self.rotation_speed * r * (1 + a_p)
+    def calculation_of_local_loads(self, r, a, a_p, v0, w_rps, chord, flow_angle, Cl, Cd):
+        """
+        Μέθοδος για τον υπολογισμό των τοπικών φορτίων
+        στα τμήματα του πτερυγίου (ΒΗΜΑ 8 ΤΟΥ ΑΛΓΟΡΙΘΜΟΥ)
+
+        Args:
+            r (_type_): _description_
+            a (_type_): _description_
+            a_p (_type_): _description_
+            chord (_type_): _description_
+            flow_angle (_type_): _description_
+            Cl (_type_): _description_
+            Cd (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        
+        v_axial = v0 * (1 - a)
+        v_tangential = w_rps * r * (1 + a_p)
         Vrel = np.sqrt((v_axial)**2 + (v_tangential)**2)
         L = 0.5 * self.air_density * (Vrel)**2 * Cl * chord
         D = 0.5 * self.air_density * (Vrel)**2 * Cd * chord
@@ -89,7 +155,7 @@ class Hansen_Algorithm:
         return L, D, pn, pt
      
     def segment_calculation(self, wind_speed_V0, omega_rad_sec, r, chord, pitch_angle_deg, twist_deg, tc_ratio, f=0.3): # εκτέλεση του αλγορίθμου
-        v0=wind_speed_V0
+        v0 = wind_speed_V0
         w_rps = omega_rad_sec
         # για κάθε τμήμα του πτερυγίου
         a, a_p = 0, 0 # αρχικοποίηση των συντελεστών επαγωγής a και a' σε 0
@@ -114,10 +180,10 @@ class Hansen_Algorithm:
             L, D, pn, pt = self.calculation_of_local_loads(r, a, a_p, chord, flow_angle_rad, Cl, Cd)
             
         return {
-            # "r_i (m)": r,
-            # "chord (m)": chord,
-            # "pitch_angle (degrees)": pitch_angle,
-            # "twist (degrees)": twist,
+            "r_i (m)": r,
+            "chord (m)": chord,
+            "pitch_angle (degrees)": pitch_angle_deg,
+            "twist (degrees)": twist_deg,
             "a": a,
             "a_p": a_p,
             "flow_angle (rads)": flow_angle_rad,
