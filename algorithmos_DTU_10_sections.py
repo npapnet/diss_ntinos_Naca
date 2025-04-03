@@ -32,8 +32,7 @@ def new_blade_geometry(r_is, chords, pitch, tc_ratios,
 
 #%%
 class Hansen_Algorithm_for_DTU_geometry(Hansen_Algorithm): # Νέα κλάση για τη γεωμετρία του πτερυγίου (DTU airfoil)
-    def __init__(self, blade_geom_DTU,
-                 B=3, air_density=1.225, csv_data_file_DTU='csv_data_file_DTU.csv'):
+    def __init__(self, blade_geom_DTU, B=3, air_density=1.225, csv_data_file_DTU='csv_data_file_DTU.csv'):
         with open(blade_geom_DTU, 'r') as f:
             blade_geom_DTU = json.load(f)
         r_is_original = blade_geom_DTU["r_is"]
@@ -43,7 +42,7 @@ class Hansen_Algorithm_for_DTU_geometry(Hansen_Algorithm): # Νέα κλάση �
         no_sections = blade_geom_DTU["no_sections"]
 
         r_first = r_is_original[0] 
-        r_last = 89.166             
+        r_last = np.max(r_is_original)             
 
         # Δημιουργούμε 10 σημεία με γραμμική παρεμβολή
         r_new, chords_new, pitch_new, tc_new = new_blade_geometry(
@@ -104,7 +103,6 @@ class Hansen_Algorithm_for_DTU_geometry(Hansen_Algorithm): # Νέα κλάση �
                 total_torque += dM # Συνολική ροπή του ρότορα
                 total_thrust += dT # Συνολική ώση του ρότορα
                 # dP = 0.5 * self.air_density * 2 * np.pi * self.wind_speed_V0**3 * Ct * r * dr
-                # total_power += dP
                 results_for_DTU_airfoil["t/c ratio"] = tc_ratio
                 results_for_DTU_airfoil["dT (Ν)"] = (dT/3) # Διαιρώ δια 3 καθώς η συγκεκριμένη τιμή αφορά και τα τρία πτερύγια
                 results_for_DTU_airfoil["dM (Nm)"] = (dM/3) # Διαιρώ δια 3 καθώς η συγκεκριμένη τιμή αφορά και τα τρία πτερύγια
@@ -126,7 +124,7 @@ class Hansen_Algorithm_for_DTU_geometry(Hansen_Algorithm): # Νέα κλάση �
 
 #%%
 if __name__ == "__main__":
-    blade_geom_file_2 = "blade_geom_file_2.json"
+    blade_geom_file_2 = "blade_geom_DTU.json"
     hansen_DTU = Hansen_Algorithm_for_DTU_geometry(
         wind_speed_V0=10,
         rotation_speed=0,
