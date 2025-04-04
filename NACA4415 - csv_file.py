@@ -1,3 +1,4 @@
+#%%
 #Κλάση για την αεροτομή Naca4415
 #Reynolds = 200.000
 
@@ -32,8 +33,8 @@ class Naca4415:
 
 naca4415 = Naca4415('csv_data_file.csv')
 
-cl_value = naca4415.cl(-50)
-cd_value = naca4415.cd(-50)
+cl_value = naca4415.cl(-5)
+cd_value = naca4415.cd(-5)
 print(f"Ο συντελεστής άνωσης cl για τη συγκεκριμένη γωνία προσβολής είναι: {cl_value}")
 print(f"Ο συντελεστής οπισθέλκουσας cd για τη συγκεκριμένη γωνία προσβολής είναι: {cd_value}")
 
