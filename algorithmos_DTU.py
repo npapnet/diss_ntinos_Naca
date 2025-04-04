@@ -74,9 +74,6 @@ class Hansen_Algorithm:
         self.pitch = pitch_new
         self.tc_ratios = tc_new
         self.no_sections = len(r_new)
-        R_new = np.max(r_new)
-
-
 
         # self.wind_speed_V0 = wind_speed_V0 # ταχύτητα του ανέμου (σε m/sec)
         self.R = r_last

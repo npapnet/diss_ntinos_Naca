@@ -7,7 +7,8 @@ import scipy.integrate as spi
 from scipy.interpolate import interp1d  
 
 from algorithmos_DTU import Hansen_Algorithm
-
+%load_ext autoreload
+%autoreload 2
        
 #%% 
 blade_geom_file_2 = "blade_geom_DTU.json"
@@ -20,7 +21,7 @@ hansen_DTU = Hansen_Algorithm(
 
 
 
-#%%    
+
 # ΔΙΑΓΡΑΜΜΑ Power Coefficient Cp - Tip Speed Ratio λ for DTU geometry
 wind_speed_V0=10
 rotation_speed_values = np.linspace(0, 1.3, 50)
@@ -31,7 +32,7 @@ rotation_speed =0.5
 pitch=hansen_DTU.pitch[0]
 chordn= hansen_DTU.chords[0]
 tc_ratio = hansen_DTU.tc_ratios[0]
-hansen_DTU.segment_calculation(
+res_dict = hansen_DTU.segment_calculation(
     wind_speed_V0=V0,
     omega_rad_sec=rotation_speed,
         r=2.8, 
@@ -42,6 +43,8 @@ hansen_DTU.segment_calculation(
         f=0.3
         )
 
+for key, value in res_dict.items():
+    print(f"{key:20s}: {value}")
 # %%
 hansen_DTU.pitch
 
