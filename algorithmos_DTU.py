@@ -2,7 +2,6 @@
 import json
 import pandas as pd
 import numpy as np
-from Naca_table import Naca_calc
 from Dtu_table import DTU_calc
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
@@ -143,14 +142,8 @@ class Hansen_Algorithm:
         Returns:
              (float): αεροδυναμικούς συντελεστές άνωσης και οπισθέλκουσας Cl και Cd
         """
-        if isinstance(self.airfoil_calc, Naca_calc):
-            Cl = self.airfoil_calc.cl(angle_of_attack_deg) # Υπολογισμός Cl μόνο με βάση τη γωνία προσβολής
-            Cd = self.airfoil_calc.cd(angle_of_attack_deg) # Υπολογισμός Cd μόνο με βάση τη γωνία προσβολής
-        elif isinstance(self.airfoil_calc, DTU_calc):
-            Cl = self.airfoil_calc.cl(angle_of_attack_deg, tc_ratio) # Υπολογισμός Cl με βάση τη γωνία προσβολής και t/c
-            Cd = self.airfoil_calc.cd(angle_of_attack_deg, tc_ratio) # Υπολογισμός Cd με βάση τη γωνία προσβολής και t/c
-        else:
-            raise ValueError("Άγνωστος τύπος αεροτομής")
+        Cl = self.airfoil_calc.cl(angle_of_attack_deg, tc_ratio) # Υπολογισμός Cl με βάση τη γωνία προσβολής και t/c
+        Cd = self.airfoil_calc.cd(angle_of_attack_deg, tc_ratio) # Υπολογισμός Cd με βάση τη γωνία προσβολής και t/c
         return Cl, Cd
     
     def calculation_of_Cn_and_Ct(self, Cl:float, Cd:float, flow_angle_rad:float):

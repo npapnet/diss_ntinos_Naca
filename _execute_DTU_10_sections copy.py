@@ -19,6 +19,9 @@ if __name__ == "__main__":
         air_density=1.225,
         csv_data_file='csv_data_file_DTU.csvs'
     )
+
+
+    
 #%%    
     # ΔΙΑΓΡΑΜΜΑ Power Coefficient Cp - Tip Speed Ratio λ for DTU geometry
     wind_speed_V0=10
