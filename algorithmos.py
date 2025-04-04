@@ -174,7 +174,7 @@ class Hansen_Algorithm:
         counter = 0 # αρχικά ο μετρητής έχει την τιμή 0
         
         while not exit_flag:
-            flow_angle_rad = self.calculation_of_flow_angle_rad(a, a_p, r)
+            flow_angle_rad = self.calculation_of_flow_angle_rad(a=a, a_p=a_p, r=r, v0=wind_speed_V0, w_rps=omega_rad_sec)
             angle_of_attack_rad = self.calculation_of_local_angle_of_attack_rad(flow_angle_rad=flow_angle_rad, pitch_angle_deg=pitch_angle_deg, twist_deg=twist_deg)
             Cl, Cd = self.calculation_of_Cl_and_Cd(angle_of_attack_deg=np.degrees(angle_of_attack_rad), tc_ratio=tc_ratio)
             Cn, Ct = self.calculation_of_Cn_and_Ct(Cl, Cd, flow_angle_rad)
@@ -188,7 +188,7 @@ class Hansen_Algorithm:
             counter += 1 # αύξηση της τιμής του μετρητή κατά 1 
             if counter > self.max_iter:
                 raise Exception("Δεν έχω σύγκλιση")
-            L, D, pn, pt = self.calculation_of_local_loads(r, a, a_p, chord, flow_angle_rad, Cl, Cd)
+            L, D, pn, pt = self.calculation_of_local_loads(r=r, a=a, a_p=a_p, v0=v0, w_rps=omega_rad_sec, chord=chord, flow_angle_rad=flow_angle_rad, Cl=Cl, Cd=Cd)
             
         return {
             "r_i (m)": r,
