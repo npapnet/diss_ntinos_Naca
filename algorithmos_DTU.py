@@ -210,14 +210,17 @@ class Hansen_Algorithm:
         pt = (L * np.sin(flow_angle_rad)) - (D * np.cos(flow_angle_rad))
         return L, D, pn, pt
      
-    def segment_calculation(self, wind_speed_V0, omega_rad_sec, r, chord, pitch_angle_deg, twist_deg, tc_ratio, f=0.3):
+    def segment_calculation(self, wind_speed_V0, omega_rad_sec, r, chord, pitch_angle_deg, twist_deg, tc_ratio, 
+                            f=0.3,debug_mode=False):
         """ εκτέλεση του αλγορίθμου για κάθε τμήμα του πτερυγίου """
         v0 = wind_speed_V0
         w_rps = omega_rad_sec
         
+        _debug_lst = []
         a, a_p = 0, 0 # αρχικοποίηση των συντελεστών επαγωγής a και a' σε 0
         exit_flag = False
         counter = 0 # αρχικά ο μετρητής έχει την τιμή 0
+        
         
         while not exit_flag:
             flow_angle_rad = self.calculation_of_flow_angle_rad(a=a, a_p=a_p, r=r, v0=wind_speed_V0, w_rps=omega_rad_sec)
@@ -233,10 +236,39 @@ class Hansen_Algorithm:
                 a_p = a_p * (1 - f) + f * a_p_new  
             counter += 1 # αύξηση της τιμής του μετρητή κατά 1 
             if counter > self.max_iter:
+                break
                 raise Exception("Δεν έχω σύγκλιση")
             L, D, pn, pt = self.calculation_of_local_loads(r=r, a=a, a_p=a_p, v0=v0, w_rps=omega_rad_sec, chord=chord, flow_angle_rad=flow_angle_rad, Cl=Cl, Cd=Cd)
+            temp_dict  ={
+                "counter":counter,
+                "r_i (m)": r,
+                "chord (m)": chord,
+                "pitch_angle (degrees)": pitch_angle_deg,
+                "twist (degrees)": twist_deg,
+                "a": a,
+                "a_p": a_p,
+                "flow_angle (rads)": flow_angle_rad,
+                "flow angle (degrees)": np.degrees(flow_angle_rad),
+                "angle_of_attack (rads)": angle_of_attack_rad,
+                "angle of attack (degrees)": np.degrees(angle_of_attack_rad),
+                "Cl": Cl,
+                "Cd": Cd,
+                "Cn": Cn,
+                "Ct": Ct,
+                "a_new": a_new,
+                "a_p_new": a_p_new,
+                "Lift (N/m)": L,
+                "Drag (N/m)": D,
+                "pn (N/m)": pn,
+                "pt (N/m)": pt
+            }
+            _debug_lst.append(temp_dict)
             
-        return {
+        if debug_mode:
+            df = pd.DataFrame(_debug_lst)
+            df.to_excel("save_res.xlsx")
+              
+        res_dict =  {
             "r_i (m)": r,
             "chord (m)": chord,
             "pitch_angle (degrees)": pitch_angle_deg,
@@ -259,7 +291,7 @@ class Hansen_Algorithm:
             "pt (N/m)": pt,
             "counter": counter
         }
-
+        return res_dict
 
     def DTU_blade_calculation(self, wind_speed_V0, rotation_speed):
         results_list_for_DTU_airfoil = [] # η λίστα που θα αποθηκεύει τα αποτελέσματα για το κάθε τμήμα του πτερυγίου
