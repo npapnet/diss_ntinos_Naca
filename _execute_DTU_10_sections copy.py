@@ -17,7 +17,7 @@ if __name__ == "__main__":
         blade_geom_DTU=blade_geom_file_2,
         B=3,
         air_density=1.225,
-        csv_data_file='csv_data_file_DTU.csvs'
+        csv_data_file='csv_data_file_DTU.csv'
     )
 
 

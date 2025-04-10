@@ -1,11 +1,11 @@
 import pytest
 
-import algorithmos_DTU_10_sections as d10
+import algorithmos_DTU as d10
 
 @pytest.fixture
 def bl_cl():
     blade_geom_DTU = "blade_geom_DTU.json"
-    hansen_DTU = d10.Hansen_Algorithm_for_DTU_geometry(
+    hansen_DTU = d10.Hansen_Algorithm(
         blade_geom_DTU=blade_geom_DTU,
         B=3,
         air_density=1.225

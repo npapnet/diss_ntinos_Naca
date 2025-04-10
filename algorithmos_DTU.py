@@ -11,10 +11,9 @@ from scipy.interpolate import interp1d
 def new_blade_geometry(r_is, chords, pitch, tc_ratios,
                             r_first, r_last, num_sections=10):
     """
-    Δημιουργεί νέο διάνυσμα ακτινικών θέσεων r_new με μήκος num_sections
-    (δηλ. num_sections σημεία) γραμμικά κατανεμημένα από r_first μέχρι r_last.
-    Στη συνέχεια υπολογίζει με γραμμική παρεμβολή τις τιμές chord, pitch, tc_ratio
-    στα r_new.
+    Μέθοδος που δημιουργεί ένα νέο πίνακα ακτινικών θέσεων r_new με μήκος num_sections
+    (δηλ. 10 σημεία) γραμμικά κατανεμημένα από r_first μέχρι r_last, σε ίση απόσταση περίπου 10 m μεταξύ τους.
+    Στη συνέχεια υπολογίζει με γραμμική παρεμβολή τις νέες τιμές chord, pitch, tc_ratio στα r_new.
     """
     # ορίζουμε τα νέα ακτινικά σημεία
     r_new = np.linspace(r_first, r_last, num_sections)
@@ -33,6 +32,10 @@ def new_blade_geometry(r_is, chords, pitch, tc_ratios,
 
 #%%
 class Hansen_Algorithm:
+    """
+    Κλάση που εμπεριέχει όλα τα βήματα του αλγορίθμου της αεροδυναμικής θεωρίας Blade Element Momentum 
+    για την ανάλυση της αεροδυναμικής συμπεριφοράς πτερυγίων ανεμογεννητριών.
+    """
     tolerance = 1e-4 # Σταθερά για τον έλεγχο σύγκλισης των τιμών των συντελεστών αξονικής και εφαπτομενικής επαγωγής a και a'
     max_iter = 1000 # Μέγιστος αριθμός επαναλήψεων
     
@@ -45,7 +48,7 @@ class Hansen_Algorithm:
             B (int, optional): ο αριθμός των πτερυγίων. Defaults to 3.
             air_density (float, optional): η πυκνότητα του αέρα σε kg/m^3. Defaults to 1.225.
             airfoil_type (string, optional): ο τύπος της αεροτομής που χρησιμοποιείται. Defaults to None.
-            csv_data_file (_type_, optional): το αρχείο csv που περιέχει τα δεδομένα για τους συντελεστές Cl και Cd. Defaults to None.
+            csv_data_file (csv file, optional): το αρχείο csv που περιέχει τα δεδομένα για τους συντελεστές Cl και Cd. Defaults to None.
         """
         with open(blade_geom_DTU, 'r') as f:
             blade_geom_DTU = json.load(f)
@@ -82,9 +85,6 @@ class Hansen_Algorithm:
         self.air_density = air_density 
         
         self.airfoil_calc = DTU_calc(csv_data_file) # Χρήση DTU δεδομένων
-        
-
-
 
     def calculation_of_flow_angle_rad(self, a, a_p, r:float, v0:int, w_rps:float):
         """
@@ -129,7 +129,7 @@ class Hansen_Algorithm:
     
     def calculation_of_Cl_and_Cd(self, angle_of_attack_deg:float, tc_ratio=None):
         """ 
-        πίνακας για τους συντελεστές άνωσης και οπισθέλκουσας Cl and Cd
+        πίνακας για τους αεροδυναμικούς συντελεστές άνωσης και οπισθέλκουσας Cl and Cd
         βάσει του angle_of_attack (γωνία προσβολής), αλλά και του λόγου t/c (thickness/chord ratio) (ΒΗΜΑ 4 ΤΟΥ ΑΛΓΟΡΙΘΜΟΥ)
         
         Args:
@@ -223,8 +223,8 @@ class Hansen_Algorithm:
             flow_angle_rad = self.calculation_of_flow_angle_rad(a=a, a_p=a_p, r=r, v0=wind_speed_V0, w_rps=omega_rad_sec)
             angle_of_attack_rad = self.calculation_of_local_angle_of_attack_rad(flow_angle_rad=flow_angle_rad, pitch_angle_deg=pitch_angle_deg, twist_deg=twist_deg)
             Cl, Cd = self.calculation_of_Cl_and_Cd(angle_of_attack_deg=np.degrees(angle_of_attack_rad), tc_ratio=tc_ratio)
-            Cn, Ct = self.calculation_of_Cn_and_Ct(Cl, Cd, flow_angle_rad)
-            a_new, a_p_new = self.calculation_of_updated_induction_factors(Cn, Ct, r, chord, flow_angle_rad)
+            Cn, Ct = self.calculation_of_Cn_and_Ct(Cl=Cl, Cd=Cd, flow_angle_rad=flow_angle_rad)
+            a_new, a_p_new = self.calculation_of_updated_induction_factors(Cn=Cn, Ct=Ct, r=r, chord=chord, flow_angle_rad=flow_angle_rad)
             
             if abs(a - a_new) < self.tolerance and abs(a_p - a_p_new) < self.tolerance: # έχω σύγκλιση των τιμών
                 exit_flag = True
@@ -261,8 +261,7 @@ class Hansen_Algorithm:
         }
 
 
-    def DTU_blade_calculation(self, wind_speed_V0,
-        rotation_speed):
+    def DTU_blade_calculation(self, wind_speed_V0, rotation_speed):
         results_list_for_DTU_airfoil = [] # η λίστα που θα αποθηκεύει τα αποτελέσματα για το κάθε τμήμα του πτερυγίου
         total_power = 0 # αρχικά η συνολική ισχύς είναι 0
         total_torque = 0 # αρχικά η συνολική ροπή είναι 0
