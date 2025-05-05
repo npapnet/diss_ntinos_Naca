@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 
 #%%
-#%%
 def new_blade_geometry(r_is, chords, pitch, tc_ratios,
                             r_first, r_last, num_sections=10):
     """
@@ -33,11 +32,11 @@ def new_blade_geometry(r_is, chords, pitch, tc_ratios,
 #%%
 class Hansen_Algorithm:
     """
-    Κλάση που εμπεριέχει όλα τα βήματα του αλγορίθμου της αεροδυναμικής θεωρίας Blade Element Momentum 
+    Κλάση που εμπεριέχει όλα τα βήματα του αλγορίθμου της αεροδυναμικής θεωρίας Blade Element Momentum (θεωρία στοιχείων πτερύγωσης - ορμής)
     για την ανάλυση της αεροδυναμικής συμπεριφοράς πτερυγίων ανεμογεννητριών.
     """
     tolerance = 1e-4 # Σταθερά για τον έλεγχο σύγκλισης των τιμών των συντελεστών αξονικής και εφαπτομενικής επαγωγής a και a'
-    max_iter = 1000 # Μέγιστος αριθμός επαναλήψεων
+    max_iter = 100 # Μέγιστος αριθμός επαναλήψεων
     
     def __init__(self, blade_geom_DTU, B=3, air_density=1.225, airfoil_type=None, csv_data_file='csv_data_file_DTU.csv'):
         """ 
@@ -48,7 +47,7 @@ class Hansen_Algorithm:
             B (int, optional): ο αριθμός των πτερυγίων. Defaults to 3.
             air_density (float, optional): η πυκνότητα του αέρα σε kg/m^3. Defaults to 1.225.
             airfoil_type (string, optional): ο τύπος της αεροτομής που χρησιμοποιείται. Defaults to None.
-            csv_data_file (csv file, optional): το αρχείο csv που περιέχει τα δεδομένα για τους συντελεστές Cl και Cd. Defaults to None.
+            csv_data_file (csv file, optional): το αρχείο csv που περιέχει τα δεδομένα για τους αεροδυναμικούς συντελεστές Cl και Cd. Defaults to None.
         """
         with open(blade_geom_DTU, 'r') as f:
             blade_geom_DTU = json.load(f)
@@ -83,12 +82,11 @@ class Hansen_Algorithm:
         # self.rotation_speed = rotation_speed # ταχύτητα περιστροφής του ρότορα (σε rad/sec)
         self.B = B 
         self.air_density = air_density 
-        
         self.airfoil_calc = DTU_calc(csv_data_file) # Χρήση DTU δεδομένων
 
     def calculation_of_flow_angle_rad(self, a, a_p, r:float, v0:int, w_rps:float):
         """
-        μέθοδος για τον υπολογισμό της γωνίας ροής φ (ΒΗΜΑ 2 ΤΟΥ ΑΛΓΟΡΙΘΜΟΥ)
+        μέθοδος για τον υπολογισμό της γωνίας ροής φ σε rad (ΒΗΜΑ 2 ΤΟΥ ΑΛΓΟΡΙΘΜΟΥ)
 
         Args:
             a (float): ο συντελεστής αξονικής επαγωγής α 
@@ -115,7 +113,7 @@ class Hansen_Algorithm:
     
     def calculation_of_local_angle_of_attack_rad(self, flow_angle_rad:float, pitch_angle_deg:float, twist_deg:float): 
         """ 
-        μέθοδος για τον υπολογισμό της τοπικής γωνίας προσβολής (ΒΗΜΑ 3 ΤΟΥ ΑΛΓΟΡΙΘΜΟΥ)
+        μέθοδος για τον υπολογισμό της τοπικής γωνίας προσβολής σε rad (ΒΗΜΑ 3 ΤΟΥ ΑΛΓΟΡΙΘΜΟΥ)
 
         Args:
             flow_angle_rad (float): η γωνία της ροής φ σε rad
@@ -170,7 +168,7 @@ class Hansen_Algorithm:
             Cn (float): o συντελεστής Cn
             Ct (float): o συντελεστής Ct
             r (float): η ακτίνα του κάθε τμήματος του πτερυγίου σε m
-            chord (float): το μήκος χορδής του κάθε τμήματος του πτερυγίου σε m
+            chord (float): το μήκος της χορδής του κάθε τμήματος του πτερυγίου σε m
             flow_angle_rad (float): η γωνία της ροής φ σε rad
 
         Returns:
@@ -192,7 +190,7 @@ class Hansen_Algorithm:
             r (float): η ακτίνα του κάθε τμήματος του πτερυγίου σε m
             a (float): ο συντελεστής αξονικής επαγωγής α 
             a_p (float): ο συντελεστής εφαπτομενικής επαγωγής α΄
-            chord (float): το μήκος χορδής του κάθε τμήματος του πτερυγίου σε m
+            chord (float): το μήκος της χορδής του κάθε τμήματος του πτερυγίου σε m
             flow_angle_rad (float): η γωνία της ροής φ σε rad
             Cl (float): ο συντελεστής άνωσης Cl
             Cd (float): o συντελεστής οπισθέλκουσας Cd
@@ -211,7 +209,7 @@ class Hansen_Algorithm:
         return L, D, pn, pt
      
     def segment_calculation(self, wind_speed_V0, omega_rad_sec, r, chord, pitch_angle_deg, twist_deg, tc_ratio, 
-                            f=0.3,debug_mode=False):
+                            f=0.3, debug_mode=False):
         """ εκτέλεση του αλγορίθμου για κάθε τμήμα του πτερυγίου """
         v0 = wind_speed_V0
         w_rps = omega_rad_sec
@@ -239,7 +237,7 @@ class Hansen_Algorithm:
                 break
                 raise Exception("Δεν έχω σύγκλιση")
             L, D, pn, pt = self.calculation_of_local_loads(r=r, a=a, a_p=a_p, v0=v0, w_rps=omega_rad_sec, chord=chord, flow_angle_rad=flow_angle_rad, Cl=Cl, Cd=Cd)
-            temp_dict  ={
+            temp_dict = {
                 "counter":counter,
                 "r_i (m)": r,
                 "chord (m)": chord,
@@ -346,7 +344,7 @@ class Hansen_Algorithm:
         wind_power = 0.5 * self.air_density * swept_area * wind_speed_V0**3
         return total_power / wind_power
     
-    def calculation_of_coefficient_of_thrust_CT_for_DTU(self, total_thrust,wind_speed_V0):
+    def calculation_of_coefficient_of_thrust_CT_for_DTU(self, total_thrust, wind_speed_V0):
         swept_area = np.pi * self.R**2 # επιφάνεια σάρωσης
         wind_force = 0.5 * self.air_density * swept_area * wind_speed_V0**2
         return total_thrust / wind_force
@@ -358,4 +356,33 @@ class Hansen_Algorithm:
 #     # print(f"Συνολική Ισχύς του φτερού: {total_power:.2f} Watt")
 #     # print(f"Συντελεστής Απόδοσης (Cp): {cp:.4f}")
 #     # print(f"Συνολική Ισχύς της Ανεμογεννήτριας: {3*total_power:.2f} Watt")
+#%%
+if __name__ == "__main__":
+    # 1) Δημιουργούμε το αντικείμενο του αλγορίθμου
+    blade_geom_DTU = "blade_geom_DTU.json"
+    hansen = Hansen_Algorithm(
+        blade_geom_DTU=blade_geom_DTU,
+        B=3,
+        air_density=1.225,
+        csv_data_file="csv_data_file_DTU.csv"  # ή ό,τι όνομα έχεις
+    )
+
+    # 2) Καλούμε τη μέθοδο DTU_blade_calculation για μια συγκεκριμένη ταχύτητα ανέμου & ταχύτητα περιστροφής
+    #    (π.χ. wind_speed_V0=10 m/s, rotation_speed=1 rad/s)
+    results_for_DTU_geometry, total_power, total_torque, total_thrust = hansen.DTU_blade_calculation(
+        wind_speed_V0=10, 
+        rotation_speed=1.3
+    )
+
+    # 3) Μετατρέπουμε τη λίστα αποτελεσμάτων σε DataFrame
+    df_DTU_results = pd.DataFrame(results_for_DTU_geometry)
+
+    # 4) Εκτυπώνουμε το DataFrame
+    print(df_DTU_results)
+
+    # Προαιρετικά, μπορείς να δεις και την κεφαλίδα, στήλες κ.λπ.
+    # print(df_DTU_results.head())
+    # print(df_DTU_results.columns)
+    
+
 
