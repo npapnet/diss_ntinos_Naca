@@ -1,18 +1,17 @@
 #%%
-"""
-Κλάση για τον υπολογισμό των αεροδυναμικών συντελεστών άνωσης και οπισθέλκουσας
-για την αεροτομή DTU με βάση τη γωνία προσβολής αλλά και το λόγο t/c (thickness / chord ratio)
-"""
-
 import csv
 import numpy as np
 
 class DTU_calc:
+    """
+    Κλάση για τον υπολογισμό των αεροδυναμικών συντελεστών άνωσης και οπισθέλκουσας
+    για την αεροτομή DTU με βάση τη γωνία προσβολής αλλά και το λόγο t/c (thickness / chord ratio)
+    """
     def __init__(self, csv_data_file_DTU):
         """ 
         Δημιουργούμε ένα λεξικό που θα αποθηκεύει τα δεδομένα της αεροτομής. Στη συνέχεια
         χρησιμοποιούμε ένα σύνολο (set) για να αποθηκεύουμε τις μοναδικές τιμές του λόγου t/c που υπάρχουν στο αρχείο CSV. 
-        Τέλος καλούμε τη μέθοδο load_data, η οποία θα διαβάσει το αρχείο CSV και θα γεμίσει τo self.data.
+        Τέλος καλούμε τη μέθοδο load_data, η οποία θα διαβάσει το αρχείο CSV και θα γεμίσει τo λεξικό.
         """
         self.data = {} 
         self.tc_values = set() 
@@ -47,10 +46,10 @@ class DTU_calc:
         for tc in self.data:
             self.data[tc] = dict(sorted(self.data[tc].items())) 
 
-    def interpolate(self, x, x1, x2, y1, y2):
+    def linear_interpolation(self, x, x1, x2, y1, y2):
         return y1 + (y2 - y1) * ((x - x1) / (x2 - x1)) 
     """
-    από τη σχέση της γραμμικής παρεμβολής y = y1 + [(x-x1)/(x2-x1)]*(y2-y1
+    από τη σχέση της γραμμικής παρεμβολής y = y1 + [(x-x1)/(x2-x1)]*(y2-y1)]
     """
     
     def get_nearest_value(self, values, desired_value): 
@@ -69,13 +68,13 @@ class DTU_calc:
         angle1, angle2 = self.get_nearest_value(list(self.data[tc1].keys()), angle_of_attack) 
         
         # Παρεμβολή πρώτα ως προς τη γωνία προσβολής
-        coef1 = self.interpolate(angle_of_attack, angle1, angle2, 
+        coef1 = self.linear_interpolation(angle_of_attack, angle1, angle2, 
                                  self.data[tc1][angle1][coef], self.data[tc1][angle2][coef])
-        coef2 = self.interpolate(angle_of_attack, angle1, angle2, 
+        coef2 = self.linear_interpolation(angle_of_attack, angle1, angle2, 
                                  self.data[tc2][angle1][coef], self.data[tc2][angle2][coef])
         
         # Παρεμβολή ως προς το λόγο t/c
-        return self.interpolate(tc_ratio, tc1, tc2, coef1, coef2)
+        return self.linear_interpolation(tc_ratio, tc1, tc2, coef1, coef2)
 
     def cl(self, angle_of_attack, tc_ratio): 
         """ μέθοδος που θα μας επιστρέψει την τιμή του συντελεστή άνωσης Cl """

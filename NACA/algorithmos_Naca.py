@@ -1,18 +1,20 @@
+
 #%% 
 import json
 import pandas as pd
 import numpy as np
-from Dtu_table import DTU_calc
+from Naca_table import Naca_calc
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 
 #%%
-def new_blade_geometry(r_is, chords, pitch, tc_ratios,
+def blade_geometry_seperation(r_is, chords, pitch,
                             r_first, r_last, num_sections=10):
     """
-    Μέθοδος που δημιουργεί ένα νέο πίνακα ακτινικών θέσεων r_new με μήκος num_sections
-    (δηλ. 10 σημεία) γραμμικά κατανεμημένα από r_first μέχρι r_last, σε ίση απόσταση περίπου 10 m μεταξύ τους.
-    Στη συνέχεια υπολογίζει με γραμμική παρεμβολή τις νέες τιμές chord, pitch, tc_ratio στα r_new.
+    Μέθοδος που θα διαβάσει το αρχείο json με τα δεδομένα της αεροτομής και δημιουργεί ένα νέο πίνακα ακτινικών θέσεων r_new με μήκος num_sections
+    (δηλ. 10 σημεία που μελετάμε στην προκειμένη περίπτωση) γραμμικά κατανεμημένα από r_first μέχρι r_last, σε ίση απόσταση περίπου 10 m μεταξύ τους.
+    Στη συνέχεια υπολογίζει με γραμμική παρεμβολή τις νέες τιμές chord, pitch, tc_ratio στα r_new. Με τη συγκεκριμένη μέθοδο είναι εφικτό να γίνει ο 
+    διαχωρισμός του φτερού σε όσα τμήματα επιθυμούμε.
     """
     # ορίζουμε τα νέα ακτινικά σημεία
     r_new = np.linspace(r_first, r_last, num_sections)
@@ -20,14 +22,12 @@ def new_blade_geometry(r_is, chords, pitch, tc_ratios,
     # φτιάχνουμε τις συναρτήσεις παρεμβολής από τα αρχικά δεδομένα
     chord_interp = interp1d(r_is, chords, kind='linear')
     pitch_interp = interp1d(r_is, pitch, kind='linear')
-    tc_interp = interp1d(r_is, tc_ratios, kind='linear')
     
     # υπολογίζουμε τις νέες τιμές
     chords_new = chord_interp(r_new)
     pitch_new = pitch_interp(r_new)
-    tc_new = tc_interp(r_new)
 
-    return r_new, chords_new, pitch_new, tc_new
+    return r_new, chords_new, pitch_new
 
 #%%
 class Hansen_Algorithm:
@@ -36,9 +36,9 @@ class Hansen_Algorithm:
     για την ανάλυση της αεροδυναμικής συμπεριφοράς πτερυγίων ανεμογεννητριών.
     """
     tolerance = 1e-4 # Σταθερά για τον έλεγχο σύγκλισης των τιμών των συντελεστών αξονικής και εφαπτομενικής επαγωγής a και a'
-    max_iter = 100 # Μέγιστος αριθμός επαναλήψεων
+    max_iter = 100 # Μέγιστος αριθμός επαναλήψεων κατά τη διαδικασία σύγκλισης
     
-    def __init__(self, blade_geom_DTU, B=3, air_density=1.225, airfoil_type=None, csv_data_file='csv_data_file_DTU.csv'):
+    def __init__(self, blade_geom_Naca, B=3, air_density=1.225, airfoil_type=None, csv_data_file='csv_data_file_Naca.csv'):
         """ 
         μέθοδος αρχικοποίησης των βασικών μεταβλητών 
 
@@ -49,23 +49,21 @@ class Hansen_Algorithm:
             airfoil_type (string, optional): ο τύπος της αεροτομής που χρησιμοποιείται. Defaults to None.
             csv_data_file (csv file, optional): το αρχείο csv που περιέχει τα δεδομένα για τους αεροδυναμικούς συντελεστές Cl και Cd. Defaults to None.
         """
-        with open(blade_geom_DTU, 'r') as f:
-            blade_geom_DTU = json.load(f)
-        r_is_original = blade_geom_DTU["r_is"]
-        chords_original = blade_geom_DTU["chords"]
-        pitch_original = blade_geom_DTU["pitch"]
-        tc_ratios_original = blade_geom_DTU["tc_ratios"]
-        no_sections = blade_geom_DTU["no_sections"]
+        with open(blade_geom_Naca, 'r') as f:
+            blade_geom_Naca = json.load(f)
+        r_is_original = blade_geom_Naca["r_is"]
+        chords_original = blade_geom_Naca["chords"]
+        pitch_original = blade_geom_Naca["pitch"]
+        no_sections = blade_geom_Naca["no_sections"]
 
         r_first = r_is_original[0] 
         r_last = np.max(r_is_original)             
 
         # Δημιουργούμε 10 σημεία με γραμμική παρεμβολή
-        r_new, chords_new, pitch_new, tc_new = new_blade_geometry(
+        r_new, chords_new, pitch_new = blade_geometry_seperation(
             r_is_original,
             chords_original,
             pitch_original,
-            tc_ratios_original,
             r_first,
             r_last,
             num_sections = 10
@@ -74,7 +72,6 @@ class Hansen_Algorithm:
         self.r_is = r_new
         self.chords = chords_new
         self.pitch = pitch_new
-        self.tc_ratios = tc_new
         self.no_sections = len(r_new)
 
         # self.wind_speed_V0 = wind_speed_V0 # ταχύτητα του ανέμου (σε m/sec)
@@ -82,7 +79,7 @@ class Hansen_Algorithm:
         # self.rotation_speed = rotation_speed # ταχύτητα περιστροφής του ρότορα (σε rad/sec)
         self.B = B 
         self.air_density = air_density 
-        self.airfoil_calc = DTU_calc(csv_data_file) # Χρήση DTU δεδομένων
+        self.airfoil_calc = Naca_calc(csv_data_file) # Χρήση DTU δεδομένων
 
     def calculation_of_flow_angle_rad(self, a, a_p, r:float, v0:int, w_rps:float):
         """
@@ -97,8 +94,8 @@ class Hansen_Algorithm:
 
         Raises:
             ValueError: Εάν η τιμή του συντελεστή εφαπτομενικής επαγωγής α΄ έχει την τιμή -1
-             τότε η εφαπτομενική ταχύτητα που βρίσκεται στον παρονομαστή γίνεται μηδέν και δεν 
-             είναι δυνατόν να γίνει διαίρεση κλάσματος με παρονομαστή το μηδέν
+            τότε η εφαπτομενική ταχύτητα γίνεται μηδέν και δεν είναι δυνατόν να γίνει διαίρεση 
+            κλάσματος με παρονομαστή το μηδέν
 
         Returns:
             (float): η γωνία της ροής φ σε rad
@@ -118,7 +115,7 @@ class Hansen_Algorithm:
         Args:
             flow_angle_rad (float): η γωνία της ροής φ σε rad
             pitch_angle_deg (float): η γωνία βήματος του πτερυγίου σε μοίρες
-            twist_deg (float):η γωνία συστροφής του πτερυγίου β σε μοίρες
+            twist_deg (float): η γωνία συστροφής του πτερυγίου β σε μοίρες
 
         Returns:
              (float): η γωνία προσβολής σε rad
@@ -137,8 +134,8 @@ class Hansen_Algorithm:
         Returns:
              (float): αεροδυναμικούς συντελεστές άνωσης και οπισθέλκουσας Cl και Cd
         """
-        Cl = self.airfoil_calc.cl(angle_of_attack_deg, tc_ratio) # Υπολογισμός Cl με βάση τη γωνία προσβολής και t/c
-        Cd = self.airfoil_calc.cd(angle_of_attack_deg, tc_ratio) # Υπολογισμός Cd με βάση τη γωνία προσβολής και t/c
+        Cl = self.airfoil_calc.cl(angle_of_attack_deg) # Υπολογισμός Cl με βάση τη γωνία προσβολής και t/c
+        Cd = self.airfoil_calc.cd(angle_of_attack_deg) # Υπολογισμός Cd με βάση τη γωνία προσβολής και t/c
         return Cl, Cd
     
     def calculation_of_Cn_and_Ct(self, Cl:float, Cd:float, flow_angle_rad:float):
@@ -208,7 +205,7 @@ class Hansen_Algorithm:
         pt = (L * np.sin(flow_angle_rad)) - (D * np.cos(flow_angle_rad))
         return L, D, pn, pt
      
-    def segment_calculation(self, wind_speed_V0, omega_rad_sec, r, chord, pitch_angle_deg, twist_deg, tc_ratio, 
+    def segment_calculation(self, wind_speed_V0, omega_rad_sec, r, chord, pitch_angle_deg, twist_deg, 
                             f=0.3, debug_mode=False):
         """ εκτέλεση του αλγορίθμου για κάθε τμήμα του πτερυγίου """
         v0 = wind_speed_V0
@@ -223,7 +220,7 @@ class Hansen_Algorithm:
         while not exit_flag:
             flow_angle_rad = self.calculation_of_flow_angle_rad(a=a, a_p=a_p, r=r, v0=wind_speed_V0, w_rps=omega_rad_sec)
             angle_of_attack_rad = self.calculation_of_local_angle_of_attack_rad(flow_angle_rad=flow_angle_rad, pitch_angle_deg=pitch_angle_deg, twist_deg=twist_deg)
-            Cl, Cd = self.calculation_of_Cl_and_Cd(angle_of_attack_deg=np.degrees(angle_of_attack_rad), tc_ratio=tc_ratio)
+            Cl, Cd = self.calculation_of_Cl_and_Cd(angle_of_attack_deg=np.degrees(angle_of_attack_rad))
             Cn, Ct = self.calculation_of_Cn_and_Ct(Cl=Cl, Cd=Cd, flow_angle_rad=flow_angle_rad)
             a_new, a_p_new = self.calculation_of_updated_induction_factors(Cn=Cn, Ct=Ct, r=r, chord=chord, flow_angle_rad=flow_angle_rad)
             
@@ -238,7 +235,6 @@ class Hansen_Algorithm:
                 raise Exception("Δεν έχω σύγκλιση")
             L, D, pn, pt = self.calculation_of_local_loads(r=r, a=a, a_p=a_p, v0=v0, w_rps=omega_rad_sec, chord=chord, flow_angle_rad=flow_angle_rad, Cl=Cl, Cd=Cd)
             temp_dict = {
-                "counter":counter,
                 "r_i (m)": r,
                 "chord (m)": chord,
                 "pitch_angle (degrees)": pitch_angle_deg,
@@ -258,7 +254,8 @@ class Hansen_Algorithm:
                 "Lift (N/m)": L,
                 "Drag (N/m)": D,
                 "pn (N/m)": pn,
-                "pt (N/m)": pt
+                "pt (N/m)": pt,
+                "counter":counter
             }
             _debug_lst.append(temp_dict)
             
@@ -291,8 +288,8 @@ class Hansen_Algorithm:
         }
         return res_dict
 
-    def DTU_blade_calculation(self, wind_speed_V0, rotation_speed):
-        results_list_for_DTU_airfoil = [] # η λίστα που θα αποθηκεύει τα αποτελέσματα για το κάθε τμήμα του πτερυγίου
+    def Naca_blade_calculation(self, wind_speed_V0, rotation_speed):
+        results_list_for_Naca_airfoil = [] # η λίστα που θα αποθηκεύει τα αποτελέσματα για το κάθε τμήμα του πτερυγίου
         total_power = 0 # αρχικά η συνολική ισχύς είναι 0
         total_torque = 0 # αρχικά η συνολική ροπή είναι 0
         total_thrust = 0 # αρχικά η συνολική ώση είναι 0
@@ -300,18 +297,17 @@ class Hansen_Algorithm:
             r = self.r_is[i]
             chord = self.chords[i]
             pitch_angle = self.pitch[i]
-            tc_ratio = self.tc_ratios[i]
             twist = 0 
             try:
-                results_for_DTU_airfoil = self.segment_calculation(
+                results_for_Naca_airfoil = self.segment_calculation(
                     wind_speed_V0=wind_speed_V0, 
                     omega_rad_sec=rotation_speed,
-                    r=r, chord=chord, pitch_angle_deg=pitch_angle, twist_deg=twist, tc_ratio=tc_ratio)
+                    r=r, chord=chord, pitch_angle_deg=pitch_angle, twist_deg=twist)
                 # Η εφαπτομενική συνιστώσα είναι αυτή που παράγει τη ροπή
                 dr = (self.r_is[i+1] - self.r_is[i]) if i < self.no_sections - 1 else (self.R - r)
-                flow_angle_rad, a, a_p = results_for_DTU_airfoil["flow_angle (rads)"], results_for_DTU_airfoil["a"], results_for_DTU_airfoil["a_p"]
-                Cn = results_for_DTU_airfoil["Cn"]
-                Ct = results_for_DTU_airfoil["Ct"]
+                flow_angle_rad, a, a_p = results_for_Naca_airfoil["flow_angle (rads)"], results_for_Naca_airfoil["a"], results_for_Naca_airfoil["a_p"]
+                Cn = results_for_Naca_airfoil["Cn"]
+                Ct = results_for_Naca_airfoil["Ct"]
 
                 dM = (
                     0.5 * self.air_density * self.B *
@@ -323,64 +319,52 @@ class Hansen_Algorithm:
                     0.5 * self.air_density * self.B * 
                 ((wind_speed_V0**2 * (1 - a)**2) / (np.sin(flow_angle_rad)**2)) * chord * Cn * dr 
                 )
-                # dM = r * self.B * results["pt"] * dr
-                # dM = 4 * np.pi * self.air_density * self.wind_speed_V0 * self.rotation_speed * (1 - a) * a_p * r**3 * dr
                 power = rotation_speed * dM
                 total_power += power # Συνολική ισχύς όλου του ρότορα 
                 total_torque += dM # Συνολική ροπή του ρότορα
                 total_thrust += dT # Συνολική ώση του ρότορα
-                # dP = 0.5 * self.air_density * 2 * np.pi * self.wind_speed_V0**3 * Ct * r * dr
-                results_for_DTU_airfoil["t/c ratio"] = tc_ratio
-                results_for_DTU_airfoil["dT (Ν)"] = (dT/3) # Διαιρώ δια 3 καθώς η συγκεκριμένη τιμή αφορά και τα τρία πτερύγια
-                results_for_DTU_airfoil["dM (Nm)"] = (dM/3) # Διαιρώ δια 3 καθώς η συγκεκριμένη τιμή αφορά και τα τρία πτερύγια
-                results_for_DTU_airfoil["Power (Watt)"] = ((power)/3) # Διαιρώ δια 3 καθώς η συγκεκριμένη τιμή αφορά και τα τρία πτερύγια
-                results_list_for_DTU_airfoil.append(results_for_DTU_airfoil)
+                results_for_Naca_airfoil["dT (Ν)"] = (dT/3) # Διαιρώ δια 3 καθώς η συγκεκριμένη τιμή αφορά και τα τρία πτερύγια
+                results_for_Naca_airfoil["dM (Nm)"] = (dM/3) # Διαιρώ δια 3 καθώς η συγκεκριμένη τιμή αφορά και τα τρία πτερύγια
+                results_for_Naca_airfoil["Power (Watt)"] = ((power)/3) # Διαιρώ δια 3 καθώς η συγκεκριμένη τιμή αφορά και τα τρία πτερύγια
+                results_list_for_Naca_airfoil.append(results_for_Naca_airfoil)
             except Exception as e:
                 print(f"Section {i} at radius {r}: {e}")
-        return results_list_for_DTU_airfoil, total_power, total_torque, total_thrust
+        return results_list_for_Naca_airfoil, total_power, total_torque, total_thrust
     
-    def calculation_of_coefficient_of_power_cp_for_DTU(self, total_power, wind_speed_V0):
+    def calculation_of_coefficient_of_power_cp_for_Naca(self, total_power, wind_speed_V0):
         swept_area = np.pi * self.R**2 # επιφάνεια σάρωσης
         wind_power = 0.5 * self.air_density * swept_area * wind_speed_V0**3
         return total_power / wind_power
     
-    def calculation_of_coefficient_of_thrust_CT_for_DTU(self, total_thrust, wind_speed_V0):
+    def calculation_of_coefficient_of_thrust_CT_for_Naca(self, total_thrust, wind_speed_V0):
         swept_area = np.pi * self.R**2 # επιφάνεια σάρωσης
         wind_force = 0.5 * self.air_density * swept_area * wind_speed_V0**2
         return total_thrust / wind_force
 
 # #%% 
-# # Εκτέλεση του αλγορίθμου και για τα δύο είδη αεροτομών
-# if __name__ == "__main__": 
-        
+# if __name__ == "__main__":  
 #     # print(f"Συνολική Ισχύς του φτερού: {total_power:.2f} Watt")
 #     # print(f"Συντελεστής Απόδοσης (Cp): {cp:.4f}")
 #     # print(f"Συνολική Ισχύς της Ανεμογεννήτριας: {3*total_power:.2f} Watt")
 #%%
 if __name__ == "__main__":
-    # 1) Δημιουργούμε το αντικείμενο του αλγορίθμου
-    blade_geom_DTU = "blade_geom_DTU.json"
+    blade_geom_Naca = "blade_geom_Naca.json"
     hansen = Hansen_Algorithm(
-        blade_geom_DTU=blade_geom_DTU,
+        blade_geom_Naca=blade_geom_Naca,
         B=3,
         air_density=1.225,
-        csv_data_file="csv_data_file_DTU.csv"  # ή ό,τι όνομα έχεις
+        csv_data_file="csv_data_file_Naca.csv" 
     )
 
-    # 2) Καλούμε τη μέθοδο DTU_blade_calculation για μια συγκεκριμένη ταχύτητα ανέμου & ταχύτητα περιστροφής
-    #    (π.χ. wind_speed_V0=10 m/s, rotation_speed=1 rad/s)
-    results_for_DTU_geometry, total_power, total_torque, total_thrust = hansen.DTU_blade_calculation(
+    # Καλούμε τη μέθοδο DTU_blade_calculation για μια συγκεκριμένη ταχύτητα ανέμου & ταχύτητα περιστροφής
+    results_for_Naca_geometry, total_power, total_torque, total_thrust = hansen.Naca_blade_calculation(
         wind_speed_V0=10, 
         rotation_speed=1.3
     )
 
-    # 3) Μετατρέπουμε τη λίστα αποτελεσμάτων σε DataFrame
-    df_DTU_results = pd.DataFrame(results_for_DTU_geometry)
+    df_Naca_results = pd.DataFrame(results_for_Naca_geometry)
+    print(df_Naca_results)
 
-    # 4) Εκτυπώνουμε το DataFrame
-    print(df_DTU_results)
-
-    # Προαιρετικά, μπορείς να δεις και την κεφαλίδα, στήλες κ.λπ.
     # print(df_DTU_results.head())
     # print(df_DTU_results.columns)
     

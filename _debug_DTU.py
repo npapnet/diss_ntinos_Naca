@@ -6,7 +6,7 @@ import json
 import scipy.integrate as spi
 from scipy.interpolate import interp1d  
 
-from algorithmos_DTU import Hansen_Algorithm
+from _algorithmos_DTU import Hansen_Algorithm
 %load_ext autoreload
 %autoreload 2
        

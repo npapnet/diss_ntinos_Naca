@@ -1,6 +1,6 @@
 import pytest
 
-import algorithmos_DTU as d10
+import _algorithmos_DTU as d10
 
 @pytest.fixture
 def bl_cl():
